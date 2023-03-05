@@ -14,12 +14,12 @@ createdb:
 dropdb:
 		docker exec -it postgres15 dropdb go-chat
 
-#migratecreate:
-#		migrate create -ext sql -dir internal/db/migration add_user_table
-#migrateup:
-#	migrate -path internal/db/migration -database "postgresql://root:password@localhost:5432/go-chat?sslmode=disable" -v up
-#migratedown:
-#		migrate create -ext sql -dir internal/db/migration add_user_table
+migratecreate:
+		migrate create -ext sql -dir internal/db/migration add_user_table
+migrateup:
+	migrate -path internal/db/migration -database "postgresql://root:password@localhost:5432/go-chat?sslmode=disable" -v up
+migratedown:
+		migrate create -ext sql -dir internal/db/migration add_user_table
 
 
-.PHONY: postgresget postgresinit
+.PHONY: postgresget postgresinit postgresstat createdb dropdb migratecreate migrateup migratedown
