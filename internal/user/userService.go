@@ -6,7 +6,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/mohamadafzal06/simple-chat/internal/util"
+)
+
+const (
+	secretKey = "secret"
 )
 
 type service struct {
@@ -48,4 +53,41 @@ func (s *service) CreateUser(ctx context.Context, req *CreateUserReq) (*CreateUs
 	}
 
 	return rUser, nil
+}
+
+type JWTClaims struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
+
+func (s *service) Login(c context.Context, req *LoginUserReq) (*LoginUserResp, error) {
+	ctx, cancle := context.WithTimeout(c, s.timeout)
+	defer cancle()
+
+	u, err := s.Repository.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return &LoginUserResp{}, fmt.Errorf("cannot get user: %v\n", err)
+	}
+
+	err = util.CheckHashPassword(u.Password, req.Password)
+	if err != nil {
+		return &LoginUserResp{}, fmt.Errorf("wrong password -> authentication failed: %v\n", err)
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JWTClaims{
+		ID:       strconv.Itoa(int(u.ID)),
+		Username: u.Username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    strconv.Itoa(int(u.ID)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		},
+	})
+
+	ss, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		return &LoginUserResp{}, fmt.Errorf("error while signing token: %v\n", err)
+	}
+
+	return &LoginUserResp{accessToken: ss, Username: u.Username, ID: strconv.Itoa(int(u.ID))}, nil
 }
