@@ -5,6 +5,7 @@ import (
 
 	"github.com/mohamadafzal06/simple-chat/internal/db"
 	"github.com/mohamadafzal06/simple-chat/internal/user"
+	"github.com/mohamadafzal06/simple-chat/internal/ws"
 	"github.com/mohamadafzal06/simple-chat/router"
 )
 
@@ -19,7 +20,10 @@ func main() {
 	userService := user.NewService(userRepo)
 	userHandler := user.NewHandler(userService)
 
-	router.InitRouter(userHandler)
+	hub := ws.NewHub()
+	wsHandler := ws.NewHandler(hub)
+
+	router.InitRouter(userHandler, wsHandler)
 	err = router.Start(":8080")
 	if err != nil {
 		log.Fatalf("cannot initialize the router: %v\n", err)
